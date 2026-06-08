@@ -49,6 +49,18 @@ matrix_bottom_out_value(uint8_t key, uint16_t rest_value) {
                ADC_MAX_VALUE);
 }
 
+// Initial rest value used to seed the start-up calibration. The calibration
+// only converges the rest value downward, so this must be at or above the
+// actual rest value of the switch. A per-switch safeguard upper bound is used
+// when a switch type is assigned; otherwise the global value is used.
+__attribute__((always_inline)) static inline uint16_t
+matrix_initial_rest_value(uint8_t key) {
+  uint8_t sw = eeconfig->switch_map[key];
+  if (sw > 0 && sw < SWITCH_TYPE_COUNT && switch_initial_rest_value[sw] > 0)
+    return switch_initial_rest_value[sw];
+  return eeconfig->calibration.initial_rest_value;
+}
+
 key_state_t key_matrix[NUM_KEYS];
 
 // Bitmap for tracking which keys have Rapid Trigger disabled
@@ -63,14 +75,16 @@ void matrix_recalibrate(bool reset_bottom_out_threshold) {
   }
 
   for (uint32_t i = 0; i < NUM_KEYS; i++) {
-    key_matrix[i].adc_filtered = eeconfig->calibration.initial_rest_value;
-    key_matrix[i].adc_rest_value = eeconfig->calibration.initial_rest_value;
-    key_matrix[i].adc_bottom_out_value =
-        matrix_bottom_out_value(i, eeconfig->calibration.initial_rest_value);
+    const uint16_t initial_rest = matrix_initial_rest_value(i);
+    key_matrix[i].adc_filtered = initial_rest;
+    key_matrix[i].adc_rest_value = initial_rest;
+    key_matrix[i].adc_bottom_out_value = matrix_bottom_out_value(i, initial_rest);
     key_matrix[i].distance = 0;
     key_matrix[i].extremum = 0;
     key_matrix[i].key_dir = KEY_DIR_INACTIVE;
     key_matrix[i].is_pressed = false;
+    key_matrix[i].release_since = 0;
+    key_matrix[i].last_rebaseline = 0;
   }
 
   // We only calibrate the rest value. The bottom-out value will be updated
@@ -101,6 +115,7 @@ void matrix_recalibrate(bool reset_bottom_out_threshold) {
 }
 
 void matrix_scan(void) {
+  const uint32_t now = timer_read();
   for (uint32_t i = 0; i < NUM_KEYS; i++) {
     const uint16_t new_adc_filtered =
         EMA(matrix_analog_read(i), key_matrix[i].adc_filtered);
@@ -205,6 +220,38 @@ void matrix_scan(void) {
       default:
         break;
       }
+    }
+
+    // Dynamic rest re-baselining: when a key has been stably released for a
+    // while, slowly track its rest value (and shift the bottom-out value by the
+    // same amount to keep the range) toward the current filtered ADC value.
+    // This absorbs thermal drift and aging without a dead zone or hysteresis.
+    // The tracking is intentionally slow and only runs while the key is truly
+    // released, so it never interferes with an actual keystroke. Tracking is
+    // bidirectional, so it follows drift both upward and downward.
+    if (key_matrix[i].key_dir == KEY_DIR_INACTIVE && !key_matrix[i].is_pressed) {
+      if (key_matrix[i].release_since == 0)
+        key_matrix[i].release_since = now;
+      else if (timer_elapsed(key_matrix[i].release_since) >=
+                   MATRIX_REBASELINE_DELAY_MS &&
+               timer_elapsed(key_matrix[i].last_rebaseline) >=
+                   MATRIX_REBASELINE_INTERVAL_MS) {
+        int32_t d = (int32_t)key_matrix[i].adc_filtered -
+                    (int32_t)key_matrix[i].adc_rest_value;
+        int32_t step = M_MAX(-MATRIX_REBASELINE_MAX_STEP,
+                             M_MIN(MATRIX_REBASELINE_MAX_STEP, d));
+        if (step != 0) {
+          key_matrix[i].adc_rest_value =
+              (uint16_t)((int32_t)key_matrix[i].adc_rest_value + step);
+          int32_t nb = (int32_t)key_matrix[i].adc_bottom_out_value + step;
+          key_matrix[i].adc_bottom_out_value =
+              (uint16_t)M_MAX(0, M_MIN(ADC_MAX_VALUE, nb));
+          key_matrix[i].last_rebaseline = now;
+        }
+      }
+    } else {
+      // Pressed or moving: freeze the rest value.
+      key_matrix[i].release_since = 0;
     }
   }
 }

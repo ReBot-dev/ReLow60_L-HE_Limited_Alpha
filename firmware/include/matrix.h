@@ -46,6 +46,27 @@
 #define MATRIX_INACTIVITY_TIMEOUT 3000
 #endif
 
+#if !defined(MATRIX_REBASELINE_DELAY_MS)
+// Time in milliseconds a key must remain fully released (distance == 0,
+// KEY_DIR_INACTIVE) before the dynamic rest re-baselining starts tracking. This
+// guards against tracking transient noise right after a release.
+#define MATRIX_REBASELINE_DELAY_MS 300
+#endif
+
+#if !defined(MATRIX_REBASELINE_INTERVAL_MS)
+// Minimum interval in milliseconds between consecutive re-baselining steps. The
+// tracking is intentionally slow since thermal/aging drift happens over
+// seconds to minutes, never as fast as a keystroke.
+#define MATRIX_REBASELINE_INTERVAL_MS 20
+#endif
+
+#if !defined(MATRIX_REBASELINE_MAX_STEP)
+// Maximum ADC correction applied per re-baselining step. Combined with the
+// interval, this bounds the tracking rate to avoid over-correcting narrow-range
+// keys (e.g. the bottom-right keys with a large magnet-sensor offset).
+#define MATRIX_REBASELINE_MAX_STEP 1
+#endif
+
 //--------------------------------------------------------------------+
 // Key Matrix
 //--------------------------------------------------------------------+
@@ -73,6 +94,12 @@ typedef struct {
   uint8_t key_dir;
   // Whether the key is pressed
   bool is_pressed;
+
+  // Timestamp (timer_read) when the key last became stably released, used by
+  // the dynamic rest re-baselining. 0 means "not currently in a stable release".
+  uint32_t release_since;
+  // Timestamp (timer_read) of the last applied re-baselining step.
+  uint32_t last_rebaseline;
 } key_state_t;
 
 // Key matrix

@@ -19,7 +19,7 @@
 // Firmware Version
 //--------------------------------------------------------------------+
 
-#define FIRMWARE_VERSION 0x0107
+#define FIRMWARE_VERSION 0x0108
 
 //--------------------------------------------------------------------+
 // Common Headers
@@ -218,6 +218,25 @@ static const uint16_t switch_initial_bottom_out[] = {
 
 _Static_assert(M_ARRAY_SIZE(switch_initial_bottom_out) == SWITCH_TYPE_COUNT,
                "switch_initial_bottom_out must have SWITCH_TYPE_COUNT entries");
+
+// Per-switch initial rest value used as a safeguard upper bound for the
+// start-up calibration. The rest value is calibrated by downward convergence,
+// so this value only needs to be at or slightly above the actual rest value of
+// the switch. A value of 0 means "use the global initial_rest_value". Only the
+// 1.5mm value is measured (bug_test rest≈2450); the rest are provisional and
+// should be confirmed with per-switch `avg` measurements.
+static const uint16_t switch_initial_rest_value[] = {
+    0,    // AUTO — use global initial_rest_value
+    2600, // Red Ghost 1.5mm (measured rest≈2450, safeguard upper bound)
+    2580, // Green Ghost 2.0mm (provisional)
+    2560, // Star 2.8mm (provisional)
+    2550, // Amethyst 3.0mm (provisional)
+    2550, // Not-KOM 3.0mm (provisional)
+    2540, // Jade 3.5mm (provisional)
+};
+
+_Static_assert(M_ARRAY_SIZE(switch_initial_rest_value) == SWITCH_TYPE_COUNT,
+               "switch_initial_rest_value must have SWITCH_TYPE_COUNT entries");
 
 // Gamepad buttons
 typedef enum {
