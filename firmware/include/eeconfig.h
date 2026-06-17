@@ -40,6 +40,14 @@ typedef struct __attribute__((packed)) {
   // actual bottom-out threshold, the distance calculation may be inaccurate
   // until the first bottom-out event.
   uint16_t initial_bottom_out_threshold;
+  // Bottom-out dead zone in travel-distance counts (0-255). Once a key is
+  // within this many counts of full press (distance >= 255 - this value), it is
+  // treated as fully bottomed out (distance forced to 255). This absorbs ADC
+  // saturation and stem wobble at the very end of the travel so that holding a
+  // key hard against the bottom does not trip a false Rapid Trigger release
+  // ("input drop-out"). It only affects the end of the travel, never the
+  // actuation point or mid-travel Rapid Trigger. A value of 0 disables it.
+  uint8_t bottom_out_deadzone;
 } eeconfig_calibration_t;
 
 // Keyboard options configuration
@@ -73,7 +81,7 @@ typedef struct __attribute__((packed)) {
 // Persistent configuration version. The size of the configuration must be
 // non-decreasing, so that the migration can assume that the new version is at
 // least as large as the previous version.
-#define EECONFIG_VERSION 0x0106
+#define EECONFIG_VERSION 0x0107
 
 // Keyboard configuration
 // Whenever there is a change in the configuration, `EECONFIG_VERSION` must be
@@ -155,6 +163,14 @@ extern const eeconfig_t *eeconfig;
 #if !defined(DEFAULT_TICK_RATE)
 // Default tick rate
 #define DEFAULT_TICK_RATE 30
+#endif
+
+#if !defined(DEFAULT_BOTTOM_OUT_DEADZONE)
+// Default bottom-out dead zone in travel-distance counts. Used by the migration
+// path when an existing configuration is upgraded. For a fresh configuration
+// the value comes from `DEFAULT_CALIBRATION` (keyboards/<board>/keyboard.json),
+// so keep this in sync with that file's `calibration.bottom_out_deadzone`.
+#define DEFAULT_BOTTOM_OUT_DEADZONE 10
 #endif
 
 //--------------------------------------------------------------------+

@@ -133,6 +133,21 @@ void matrix_scan(void) {
         adc_to_distance(new_adc_filtered, key_matrix[i].adc_rest_value,
                         key_matrix[i].adc_bottom_out_value);
 
+    // Bottom-out dead zone: once the key is within `bottom_out_deadzone`
+    // distance counts of full press, snap it to fully bottomed out. Near the
+    // bottom the ADC saturates and stem wobble makes the filtered value jitter;
+    // without this, that jitter can drop `distance` below the held `extremum`
+    // and trip a false Rapid Trigger release ("input drop-out") while the key
+    // is pressed hard against the bottom. The dead zone only affects the very
+    // end of the travel, so it never moves the actuation point or changes the
+    // mid-travel Rapid Trigger feel. A value of 0 disables it.
+    {
+      const uint8_t deadzone = eeconfig->calibration.bottom_out_deadzone;
+      const uint8_t bottom_out_point = (uint8_t)(255u - deadzone);
+      if (deadzone > 0 && key_matrix[i].distance >= bottom_out_point)
+        key_matrix[i].distance = 255;
+    }
+
 #ifdef MATRIX_FIXED_ONOFF_KEYS
     {
       // Hardware workaround: keys listed here have too little ADC travel for

@@ -38,6 +38,10 @@ static bool v1_6_global_config_func(uint8_t *dst, const uint8_t *src);
 static bool v1_6_profile_config_func(uint8_t profile, uint8_t *dst,
                                      const uint8_t *src);
 
+static bool v1_7_global_config_func(uint8_t *dst, const uint8_t *src);
+static bool v1_7_profile_config_func(uint8_t profile, uint8_t *dst,
+                                     const uint8_t *src);
+
 // Migration metadata for each configuration version. The first entry is
 // reserved for the initial version (v1.0) which does not require migration.
 static const migration_t migrations[] = {
@@ -123,6 +127,23 @@ static const migration_t migrations[] = {
         ,
         .global_config_func = v1_6_global_config_func,
         .profile_config_func = v1_6_profile_config_func,
+    },
+    {
+        .version = 0x0107,
+        .global_config_size = 14             // Other fields
+                              + 1            // Bottom-out dead zone
+                              + NUM_KEYS * 2 // Bottom-out threshold
+                              + NUM_KEYS     // Switch map
+        ,
+        .profile_config_size = NUM_LAYERS * NUM_KEYS    // Keymap
+                               + NUM_KEYS * 4           // Actuation map
+                               + NUM_ADVANCED_KEYS * 12 // Advanced keys
+                               + NUM_KEYS               // Gamepad buttons
+                               + 9                      // Gamepad options
+                               + 1                      // Tick rate
+        ,
+        .global_config_func = v1_7_global_config_func,
+        .profile_config_func = v1_7_profile_config_func,
     },
 };
 
@@ -374,6 +395,35 @@ bool v1_6_global_config_func(uint8_t *dst, const uint8_t *src) {
 }
 
 bool v1_6_profile_config_func(uint8_t profile, uint8_t *dst,
+                              const uint8_t *src) {
+  // Copy the entire profile (unchanged)
+  migration_memcpy(&dst, &src,
+                   NUM_LAYERS * NUM_KEYS + NUM_KEYS * 4 +
+                       NUM_ADVANCED_KEYS * 12 + NUM_KEYS + 9 + 1);
+
+  return true;
+}
+
+//--------------------------------------------------------------------+
+// v1.6 -> v1.7 Migration (add calibration.bottom_out_deadzone)
+//--------------------------------------------------------------------+
+
+bool v1_7_global_config_func(uint8_t *dst, const uint8_t *src) {
+  if (((eeconfig_t *)src)->version != 0x0106)
+    // Expected version v1.6
+    return false;
+
+  // Copy `magic_start` through `calibration.initial_bottom_out_threshold`
+  migration_memcpy(&dst, &src, 10);
+  // Initialize the new `calibration.bottom_out_deadzone`
+  migration_assign_uint8_t(&dst, DEFAULT_BOTTOM_OUT_DEADZONE);
+  // Copy `bottom_out_threshold` through `last_non_default_profile`
+  migration_memcpy(&dst, &src, NUM_KEYS * 2 + NUM_KEYS + 4);
+
+  return true;
+}
+
+bool v1_7_profile_config_func(uint8_t profile, uint8_t *dst,
                               const uint8_t *src) {
   // Copy the entire profile (unchanged)
   migration_memcpy(&dst, &src,

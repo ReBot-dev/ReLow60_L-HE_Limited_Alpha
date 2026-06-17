@@ -94,6 +94,10 @@ class KeyboardCalibration(BaseModel):
     initial_rest_value: NonNegativeInt
     # See `include/lib/eeconfig.h`
     initial_bottom_out_threshold: NonNegativeInt
+    # Bottom-out dead zone in travel-distance counts (0-255). See
+    # `eeconfig_calibration_t` in `include/eeconfig.h`. Keep the default in sync
+    # with `DEFAULT_BOTTOM_OUT_DEADZONE`.
+    bottom_out_deadzone: NonNegativeInt = 10
 
 
 # Wear leveling Configuration
