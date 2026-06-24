@@ -22,6 +22,7 @@
 #include "hid.h"
 #include "keycodes.h"
 #include "lib/bitmap.h"
+#include "macro.h"
 #include "matrix.h"
 #include "xinput.h"
 
@@ -234,6 +235,9 @@ void layout_task(void) {
     should_send_reports = false;
   }
 
+  // Advance any macro that is currently playing.
+  macro_task();
+
   // Process deferred actions for the next matrix scan
   deferred_action_process();
 }
@@ -277,6 +281,10 @@ void layout_register(uint8_t key, uint8_t keycode) {
 
   case PROFILE_RANGE:
     layout_set_profile(PF_GET_PROFILE(keycode));
+    break;
+
+  case MACRO_RANGE:
+    macro_play(MC_GET_INDEX(keycode));
     break;
 
   case SP_KEY_LOCK:

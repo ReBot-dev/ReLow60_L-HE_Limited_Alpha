@@ -55,6 +55,8 @@ typedef enum {
   COMMAND_SET_GAMEPAD_BUTTONS,
   COMMAND_GET_GAMEPAD_OPTIONS,
   COMMAND_SET_GAMEPAD_OPTIONS,
+  COMMAND_GET_MACRO,
+  COMMAND_SET_MACRO,
 
   COMMAND_UNKNOWN = 255,
 } command_id_t;
@@ -133,6 +135,16 @@ typedef struct __attribute__((packed)) {
   gamepad_options_t gamepad_options;
 } command_in_gamepad_options_t;
 
+typedef struct __attribute__((packed)) {
+  uint16_t offset;
+} command_in_get_macro_t;
+
+typedef struct __attribute__((packed)) {
+  uint16_t offset;
+  uint8_t len;
+  uint8_t data[60];
+} command_in_set_macro_t;
+
 // Command input buffer type
 typedef struct __attribute__((packed)) {
   uint8_t command_id;
@@ -153,6 +165,9 @@ typedef struct __attribute__((packed)) {
 
     command_in_get_switch_map_t get_switch_map;
     command_in_set_switch_map_t set_switch_map;
+
+    command_in_get_macro_t get_macro;
+    command_in_set_macro_t set_macro;
   };
 } command_in_buffer_t;
 
@@ -206,6 +221,8 @@ typedef struct __attribute__((packed)) {
     gamepad_options_t gamepad_options;
     // For `COMMAND_GET_SWITCH_MAP`
     uint8_t switch_map[63];
+    // For `COMMAND_GET_MACRO`
+    uint8_t macro[63];
   };
 } command_out_buffer_t;
 

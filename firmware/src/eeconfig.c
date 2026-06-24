@@ -65,6 +65,7 @@ void eeconfig_init(void) {
 bool eeconfig_reset(void) {
   uint16_t bottom_out_threshold[NUM_KEYS] = {0};
   uint8_t switch_map[NUM_KEYS] = {0};
+  static const uint8_t macros[MACRO_BUFFER_SIZE] = {0};
 
   // We must not perform any action here that requires reading from
   // the configuration as it may be in an invalid state.
@@ -75,6 +76,7 @@ bool eeconfig_reset(void) {
   status &= EECONFIG_WRITE(bottom_out_threshold, bottom_out_threshold);
   status &= EECONFIG_WRITE(switch_map, switch_map);
   status &= EECONFIG_WRITE(options, &default_options);
+  status &= EECONFIG_WRITE(macros, macros);
   EECONFIG_WRITE_LOCAL(current_profile, 0);
   EECONFIG_WRITE_LOCAL(last_non_default_profile, M_MIN(1, NUM_PROFILES - 1));
   for (uint32_t i = 0; i < NUM_PROFILES; i++)

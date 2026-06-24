@@ -27,6 +27,15 @@
 // Magic number to identify the end of the configuration
 #define EECONFIG_MAGIC_END 0x0A4B4D48
 
+// Number of stored macros. Each macro is triggered by the keycode
+// `SP_MACRO_MIN + index`, so this must not exceed the macro keycode range.
+#define MACRO_COUNT 16
+// Total size in bytes of the shared macro storage buffer. Macros are stored
+// back-to-back as sequences of 2-byte events ([opcode, arg]) each terminated by
+// a single `MACRO_OP_END` (0x00) byte. The buffer is global (shared across all
+// profiles). See `macro.h` for the event encoding.
+#define MACRO_BUFFER_SIZE 1024
+
 // Keyboard calibration configuration
 typedef struct __attribute__((packed)) {
   // Initial rest value of the key matrix. If the value is smaller than the
@@ -81,7 +90,7 @@ typedef struct __attribute__((packed)) {
 // Persistent configuration version. The size of the configuration must be
 // non-decreasing, so that the migration can assume that the new version is at
 // least as large as the previous version.
-#define EECONFIG_VERSION 0x0107
+#define EECONFIG_VERSION 0x0108
 
 // Keyboard configuration
 // Whenever there is a change in the configuration, `EECONFIG_VERSION` must be
@@ -107,6 +116,8 @@ typedef struct __attribute__((packed)) {
   uint8_t current_profile;
   // Last non-default profile index, used for profile swapping
   uint8_t last_non_default_profile;
+  // Shared macro storage buffer (global, not per-profile). See `macro.h`.
+  uint8_t macros[MACRO_BUFFER_SIZE];
   // End of global configurations
 
   // Profiles

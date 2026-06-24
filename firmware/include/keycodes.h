@@ -189,6 +189,10 @@ typedef enum {
   SP_MOUSE_BUTTON_4 = 0x9E,
   SP_MOUSE_BUTTON_5 = 0x9F,
 
+  // Macro keycodes (one per stored macro). Pressing one plays the macro.
+  SP_MACRO_MIN = 0xB0,
+  SP_MACRO_MAX = 0xBF,
+
   // Layer keycodes
   SP_MO_MIN = 0xC0,
   SP_MO_MAX = 0xC7,
@@ -326,6 +330,9 @@ extern const uint16_t keycode_to_hid[];
 #define PF(profile) (SP_PF_MIN | (profile))
 #define PF_GET_PROFILE(kc) ((kc) & 0x07)
 
+#define MC(index) (SP_MACRO_MIN | (index))
+#define MC_GET_INDEX(kc) ((kc) & 0x0F)
+
 #define IS_KEYBOARD_KEYCODE(kc) (KC_A <= (kc) && (kc) <= KC_LANGUAGE_5)
 #define IS_MODIFIER_KEYCODE(kc) (KC_LEFT_CTRL <= (kc) && (kc) <= KC_RIGHT_GUI)
 #define IS_SYSTEM_KEYCODE(kc)                                                  \
@@ -344,5 +351,6 @@ extern const uint16_t keycode_to_hid[];
 #define CONSUMER_KEYCODE_RANGE KC_AUDIO_MUTE... KC_LAUNCHPAD
 #define MOUSE_KEYCODE_RANGE SP_MOUSE_BUTTON_1... SP_MOUSE_BUTTON_5
 #define HID_KEYCODE_RANGE KC_A... SP_MOUSE_BUTTON_5
+#define MACRO_RANGE SP_MACRO_MIN... SP_MACRO_MAX
 #define MOMENTARY_LAYER_RANGE SP_MO_MIN... SP_MO_MAX
 #define PROFILE_RANGE SP_PF_MIN... SP_PF_MAX

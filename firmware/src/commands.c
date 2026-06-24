@@ -184,6 +184,28 @@ void command_process(const uint8_t *buf) {
                                sizeof(uint8_t) * p->len);
     break;
   }
+  case COMMAND_GET_MACRO: {
+    const command_in_get_macro_t *p = &in->get_macro;
+
+    COMMAND_VERIFY(p->offset < MACRO_BUFFER_SIZE);
+
+    memcpy(out->macro, eeconfig->macros + p->offset,
+           M_MIN(M_ARRAY_SIZE(out->macro),
+                 (uint32_t)(MACRO_BUFFER_SIZE - p->offset)) *
+               sizeof(uint8_t));
+    break;
+  }
+  case COMMAND_SET_MACRO: {
+    const command_in_set_macro_t *p = &in->set_macro;
+
+    COMMAND_VERIFY(p->offset < MACRO_BUFFER_SIZE);
+    COMMAND_VERIFY(p->len <= M_ARRAY_SIZE(p->data) &&
+                   p->len <= MACRO_BUFFER_SIZE - p->offset);
+
+    success = EECONFIG_WRITE_N(macros[p->offset], p->data,
+                               sizeof(uint8_t) * p->len);
+    break;
+  }
     //--------------------------------------------------------------------+
     // Per-profile commands
     //--------------------------------------------------------------------+

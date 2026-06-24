@@ -21,6 +21,7 @@
 #include "hardware/hardware.h"
 #include "hid.h"
 #include "layout.h"
+#include "macro.h"
 #include "matrix.h"
 #include "measurement.h"
 #ifdef OLED_ENABLED
@@ -52,6 +53,7 @@ int main(void) {
   matrix_init();
   hid_init();
   deferred_action_init();
+  macro_init();
   advanced_key_init();
   xinput_init();
   layout_init();
