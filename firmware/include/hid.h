@@ -47,6 +47,13 @@ void hid_keycode_add(uint8_t keycode);
 void hid_keycode_remove(uint8_t keycode);
 
 /**
+ * @brief Get the modifier byte of the current keyboard report
+ *
+ * @return Modifier bitmap (bit 0: Left Ctrl ... bit 7: Right GUI)
+ */
+uint8_t hid_get_modifiers(void);
+
+/**
  * @brief Send all HID reports
  *
  * This function will block until the device is ready to send the reports.

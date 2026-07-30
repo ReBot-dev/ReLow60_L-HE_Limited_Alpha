@@ -195,6 +195,8 @@ void hid_keycode_remove(uint8_t keycode) {
   }
 }
 
+uint8_t hid_get_modifiers(void) { return kb_report.modifiers; }
+
 void hid_send_reports(void) {
 #if !defined(HID_DISABLED)
   if (tud_suspended())

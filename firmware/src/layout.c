@@ -99,6 +99,12 @@ static bool should_send_reports;
 // Whether the key is disabled by `SP_KEY_LOCK`
 static bitmap_t key_disabled[] = MAKE_BITMAP(NUM_KEYS);
 
+// Shift or GUI modifier bits in the HID modifier byte
+#define GRAVE_ESCAPE_MODS 0xAA
+// Whether `SP_GRAVE_ESCAPE` resolved to `KC_GRAVE` when it was pressed, so
+// the release unregisters the same keycode even if modifiers changed
+static bool grave_escape_is_grave;
+
 // Track whether the key is currently pressed. Used to detect key events.
 static bitmap_t key_press_states[] = MAKE_BITMAP(NUM_KEYS);
 // Store the keycodes of the currently pressed keys. Layer/profile may change so
@@ -308,6 +314,12 @@ void layout_register(uint8_t key, uint8_t keycode) {
     board_enter_bootloader();
     break;
 
+  case SP_GRAVE_ESCAPE:
+    grave_escape_is_grave = (hid_get_modifiers() & GRAVE_ESCAPE_MODS) != 0;
+    hid_keycode_add(grave_escape_is_grave ? KC_GRAVE : KC_ESCAPE);
+    should_send_reports = true;
+    break;
+
   default:
     break;
   }
@@ -320,6 +332,11 @@ void layout_unregister(uint8_t key, uint8_t keycode) {
   switch (keycode) {
   case HID_KEYCODE_RANGE:
     hid_keycode_remove(keycode);
+    should_send_reports = true;
+    break;
+
+  case SP_GRAVE_ESCAPE:
+    hid_keycode_remove(grave_escape_is_grave ? KC_GRAVE : KC_ESCAPE);
     should_send_reports = true;
     break;
 
