@@ -99,8 +99,13 @@ static bool should_send_reports;
 // Whether the key is disabled by `SP_KEY_LOCK`
 static bitmap_t key_disabled[] = MAKE_BITMAP(NUM_KEYS);
 
-// Shift or GUI modifier bits in the HID modifier byte
-#define GRAVE_ESCAPE_MODS 0xAA
+// Shift modifier bits in the HID modifier byte. GUI is deliberately excluded
+// so `GUI`+`SP_GRAVE_ESCAPE` still resolves to `KC_ESCAPE`, keeping shortcuts
+// such as macOS Force Quit and desktop lock screens usable
+#define GRAVE_ESCAPE_MODS 0x22
+// Control modifier bits. Control overrides the above and always resolves to
+// `KC_ESCAPE` so `Ctrl`+`Shift`+`Esc` (Windows Task Manager) keeps working
+#define GRAVE_ESCAPE_CTRL_MODS 0x11
 // Whether `SP_GRAVE_ESCAPE` resolved to `KC_GRAVE` when it was pressed, so
 // the release unregisters the same keycode even if modifiers changed
 static bool grave_escape_is_grave;
@@ -315,7 +320,9 @@ void layout_register(uint8_t key, uint8_t keycode) {
     break;
 
   case SP_GRAVE_ESCAPE:
-    grave_escape_is_grave = (hid_get_modifiers() & GRAVE_ESCAPE_MODS) != 0;
+    grave_escape_is_grave =
+        (hid_get_modifiers() & GRAVE_ESCAPE_CTRL_MODS) == 0 &&
+        (hid_get_modifiers() & GRAVE_ESCAPE_MODS) != 0;
     hid_keycode_add(grave_escape_is_grave ? KC_GRAVE : KC_ESCAPE);
     should_send_reports = true;
     break;
